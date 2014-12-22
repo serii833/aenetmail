@@ -25,6 +25,7 @@ namespace AE.Net.Mail {
 		private Task _IdleTask;
 		private Task _ResponseTask;
 
+
 		private string _FetchHeaders = null;
 
 		public ImapClient() {
@@ -43,8 +44,8 @@ namespace AE.Net.Mail {
 		public int IdleTimeout { get; set; }
 
 		public virtual AuthMethods AuthMethod { get; set; }
-
-		private string GetTag() {
+	    
+        private string GetTag() {
 			_tag++;
 			return string.Format("xm{0:000} ", _tag);
 		}
@@ -67,7 +68,9 @@ namespace AE.Net.Mail {
 		}
 
 		private EventHandler<MessageEventArgs> _MessageDeleted;
-		public virtual event EventHandler<MessageEventArgs> MessageDeleted {
+	    
+
+	    public virtual event EventHandler<MessageEventArgs> MessageDeleted {
 			add {
 				_MessageDeleted += value;
 				IdleStart();
@@ -765,7 +768,10 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual void SetFlags(string flags, params MailMessage[] msgs) {
-			Store("UID " + string.Join(" ", msgs.Select(x => x.Uid)), true, flags);
+            if(msgs.Length == 0)
+                return;
+		    ;
+			Store("UID " + GetUidsSequence(msgs), true, flags);
 			foreach (var msg in msgs) {
 				msg.SetFlags(flags);
 			}
@@ -781,13 +787,21 @@ namespace AE.Net.Mail {
 		}
 
 		public virtual void AddFlags(string flags, params MailMessage[] msgs) {
-			Store("UID " + string.Join(" ", msgs.Select(x => x.Uid)), false, flags);
+            if (msgs.Length == 0)
+                return;
+		    
+			Store("UID " + GetUidsSequence(msgs), false, flags);
 			foreach (var msg in msgs) {
 				msg.SetFlags(FlagsToFlagString(msg.Flags) + " " + flags);
 			}
 		}
 
-		public virtual void Store(string messageset, bool replace, string flags) {
+	    private static string GetUidsSequence(MailMessage[] msgs)
+	    {
+	        return string.Join(",", msgs.Select(x => x.Uid));
+	    }
+
+	    public virtual void Store(string messageset, bool replace, string flags) {
 			CheckMailboxSelected();
 			IdlePause();
 			string prefix = null;
@@ -796,7 +810,7 @@ namespace AE.Net.Mail {
 				prefix = "UID ";
 			}
 
-			string command = string.Concat(GetTag(), prefix, "STORE ", messageset, " ", replace ? "" : "+", "FLAGS.SILENT (" + flags + ")");
+            string command = string.Concat(GetTag(), prefix, "STORE ", messageset, " ", replace ? "" : "+", "FLAGS.SILENT (" + flags + ")");
 			string response = SendCommandGetResponse(command);
 			while (response.StartsWith("*")) {
 				response = GetResponse();
