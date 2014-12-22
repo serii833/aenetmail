@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 
@@ -96,6 +97,9 @@ namespace AE.Net.Mail {
 		}
 
 		protected virtual void SendCommand(string command) {
+#if DEBUG
+            Trace.WriteLine("C:" + command);
+#endif
 			var bytes = System.Text.Encoding.Default.GetBytes(command + "\r\n");
 			_Stream.Write(bytes, 0, bytes.Length);
 		}
@@ -107,7 +111,11 @@ namespace AE.Net.Mail {
 
 		protected virtual string GetResponse(int Timeout = 10000) {
 			int max = 0;
-			return _Stream.ReadLine(ref max, Encoding, null, Timeout);
+			var response = _Stream.ReadLine(ref max, Encoding, null, Timeout);
+#if DEBUG
+            Trace.WriteLine(response);
+#endif
+		    return response;
 		}
 
 		protected virtual void SendCommandCheckOK(string command) {
